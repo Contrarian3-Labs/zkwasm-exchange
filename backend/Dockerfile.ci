@@ -1,0 +1,31 @@
+# Build stage
+FROM node:18-bullseye as builder
+
+WORKDIR /app
+
+COPY . .
+
+RUN cd ts && npm i && npx tsc
+
+COPY build-artifacts/application/* ts/node_modules/zkwasm-ts-server/src/application/
+
+# Production stage
+FROM node:18-slim
+
+ENV NODE_ENV="production"
+
+WORKDIR /app
+
+# Copy only necessary files from builder
+COPY --from=builder /app/ts ./ts
+COPY --from=builder /app/src/admin.pubkey ./src/admin.pubkey
+
+# Create user first
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Switch to non-root user
+USER appuser
+
+EXPOSE 3000
+
+CMD ["node", "./ts/src/service.js"]

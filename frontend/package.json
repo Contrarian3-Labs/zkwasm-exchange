@@ -1,0 +1,78 @@
+{
+  "name": "zkwasm-exchange",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.7.2",
+    "@heroicons/react": "^2.2.0",
+    "@reduxjs/toolkit": "^1.5.1",
+    "@wasm-tool/wasm-pack-plugin": "^1.7.0",
+    "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.11.3",
+    "crypto-browserify": "^3.12.0",
+    "delphinus-curves": "github:DelphinusLab/delphinus-curves",
+    "ethers": "^6.13.5",
+    "https-browserify": "^1.0.0",
+    "mdb-react-ui-kit": "^9.0.0",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
+    "polymarket-ui": "^1.1.4",
+    "process": "^0.11.10",
+    "react": "^18.2.0",
+    "react-app-rewired": "^2.2.1",
+    "react-bootstrap": "^2.7.0",
+    "react-dom": "^18.2.0",
+    "react-redux": "^8.0.5",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
+    "styled-components": "^6.1.14",
+    "zkwasm-minirollup-browser": "github:DelphinusLab/zkWasm-minirollup-browser",
+    "zkwasm-minirollup-rpc": "github:DelphinusLab/zkWasm-minirollup-rpc",
+    "zkwasm-service-helper": "github:DelphinusLab/zkWasm-service-helper"
+  },
+  "scripts": {
+    "start": "npx react-app-rewired start",
+    "build": "npx react-app-rewired build",
+    "test": "npx react-app-rewired test",
+    "eject": "npx react-app-rewired eject",
+    "publish": "sh publish.sh",
+    "asbuild:untouched": "asc assembly/index.ts -b build/untouched.wasm -t build/untouched.wat --validate --sourceMap --debug",
+    "asbuild:optimized": "asc assembly/index.ts -b build/optimized.wasm -t build/optimized.wat --validate --sourceMap --optimize",
+    "asbuild": "npm run asbuild:untouched && npm run asbuild:optimized"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "homepage": "./",
+  "build": {
+    "appId": "com.github.zhenxunge.zkwasmpg",
+    "files": [
+      "build/**/*",
+      "node_modules/**/*"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.12",
+    "@types/react-dom": "^18.0.10",
+    "@types/sha256": "^0.2.2",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^4.3.4"
+  }
+}
