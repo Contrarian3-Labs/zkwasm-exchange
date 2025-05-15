@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { MDBTypography } from 'mdb-react-ui-kit';
 import { MarketChartUI, ChartData } from "polymarket-ui";
 import { useAppSelector } from '../app/hooks';
 import { selectUserState, Order } from '../data/state';
@@ -131,15 +130,25 @@ export const MarketChart: React.FC<MarketChartProps> = ({
     // 计算主值和变化值
     let mainValue;
     let changeValue;
+    
+    // 使用价格历史记录来计算价格变化
+    const currentPrice = Number(market.lastPrice);
+    const previousPrice = prePriceMap[marketId] || 0;
+    const priceChange = currentPrice - previousPrice;
+    
     if(marketOrders.length !== 0) {
       let lastOrder = marketOrders[marketOrders.length - 1];
       let firstOrder = marketOrders[0];
       mainValue = lastOrder.price;
       changeValue = mainValue - firstOrder.price;
     } else {
-      mainValue = Number(market.lastPrice);
-      changeValue = 0;
+      mainValue = currentPrice;
+      changeValue = priceChange;
     }
+    
+    // 使用lastPriceMap和prePriceMap来确定价格趋势
+    const priceDirection = lastPriceMap[marketId] > prePriceMap[marketId] ? "up" : 
+                          lastPriceMap[marketId] < prePriceMap[marketId] ? "down" : "neutral";
 
     return {
       title: title || `Market ${marketId}`,
@@ -152,7 +161,8 @@ export const MarketChart: React.FC<MarketChartProps> = ({
         onBookmark: handleBookmark,
         onShare: handleShare,
         onCopy: handleCopy,
-      }
+      },
+      priceDirection // 添加价格趋势信息
     };
   }, [
     activeMarkets, 
@@ -164,7 +174,9 @@ export const MarketChart: React.FC<MarketChartProps> = ({
     selectedMarket, 
     selectedTimeRange, 
     title, 
-    generateChartData
+    generateChartData,
+    prePriceMap,
+    lastPriceMap
   ]);
 
   useEffect(() => {

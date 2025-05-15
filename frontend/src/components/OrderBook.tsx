@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { MDBTypography } from 'mdb-react-ui-kit';
 import { OrderBookUI, OrderItem } from "polymarket-ui";
 import { useAppSelector } from '../app/hooks';
-import { selectUserState, Order } from '../data/state';
+import { selectUserState } from '../data/state';
 import { selectMarketInfo } from "../data/market";
 import { ResultModal } from "../modals/ResultModal";
 
