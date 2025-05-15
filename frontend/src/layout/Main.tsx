@@ -29,16 +29,19 @@ import {
   MDBCol,
   MDBTypography,
   MDBTabsContent,
-  MDBTabsPane
+  MDBTabsPane,
 } from 'mdb-react-ui-kit';
 import { queryStateI } from "../request";
 import { UserState } from "../data/state";
 import {
   useMediaQuery,
-  useThemeContext
+  useThemeContext,
 } from "polymarket-ui";
 import TradingPanel from "../components/TradingPanel";
 import { Comments } from "../components/Comments";
+import { selectMarketInfo } from "../data/market";
+import MarketChart from "../components/MarketChart";
+import OrderBook from "../components/OrderBook";
 
 const CMD_REGISTER_PLAYER = 4n;
 // hardcode admin for test
@@ -54,7 +57,8 @@ export function Main() {
   const [playerState, setPlayerState] = useState<UserState | null>(null);
   const isMobile = useMediaQuery("(max-width: 1024px)");
   const { isDarkMode, toggleDarkMode } = useThemeContext();
-  const [selectedMarket, setSelectedMarket] = useState<number | null>(null);
+  const [selectedMarket, setSelectedMarket] = useState<number | null>(1); // 默认选择市场1
+  const marketInfo = useAppSelector(selectMarketInfo);
 
   async function updateState() {
     dispatch(queryMarket());
@@ -117,20 +121,31 @@ export function Main() {
     }
   }, [connectState]);
 
-  const handleTabClick = (value: string) => {
-    if (value === activeTab) return;
-    setActiveTab(value);
+  const handleTabClick = (value: string) => {    
+    if (value === activeTab) return;    
+    setActiveTab(value);  
   };
 
   return (
     <>
-      <button onClick={toggleDarkMode}>Toggle {isDarkMode ? "Light" : "Dark"} Mode</button>
-      <div className={`min-h-screen bg-gray-100 dark:bg-gray-900`}>
+      <div className={`min-h-screen ${isDarkMode ? 'dark-mode' : ''}`}>
         <Nav handleTabClick={handleTabClick} />
         <div className="container mx-auto px-4 py-6 pb-[120px] lg:pb-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left column */}
+            {/* 左侧市场图表和信息 */}
             <div className="lg:col-span-2 space-y-6">
+              {/* 市场图表和订单簿 */}
+              <MDBCard className="mb-4">
+                <MDBCardBody>
+                  {/* 市场图表 */}
+                  <MarketChart />
+                  
+                  {/* 订单簿 */}
+                  <OrderBook />
+                </MDBCardBody>
+              </MDBCard>
+
+              {/* Tab内容 */}
               <MDBTabsContent style={{ maxHeight: "400px", overflowY: "auto" }}>
                 <MDBTabsPane open={activeTab === "1"}>
                   <AdminInfo adminState={adminState} />
@@ -149,6 +164,7 @@ export function Main() {
                 </MDBTabsPane>
               </MDBTabsContent>
 
+              {/* 命令区 */}
               <MDBRow className="mt-4">
                 <MDBCol>
                   <MDBCard>
@@ -161,20 +177,33 @@ export function Main() {
                   </MDBCard>
                 </MDBCol>
               </MDBRow>
-              <Comments />
+              
+              {/* 评论区 */}
+              <MDBCard className="comments-container">
+                <MDBCardBody>
+                  <Comments />
+                </MDBCardBody>
+              </MDBCard>
             </div>
-            {/* Right column - Only visible on desktop */}
+            
+            {/* 右侧交易面板 - 仅在桌面显示 */}
             {!isMobile && (
               <div className="lg:col-span-1">
-                <TradingPanel selectedMarket={selectedMarket} setSelectedMarket={setSelectedMarket} currentPrice={75} maxAmount={1000} />
+                <div className="trading-panel">
+                  <TradingPanel selectedMarket={selectedMarket} setSelectedMarket={setSelectedMarket} currentPrice={75} maxAmount={1000} />
+                </div>
               </div>
             )}
           </div>
         </div>
-        {/* Mobile trading panel */}
-        {isMobile && <TradingPanel selectedMarket={selectedMarket} setSelectedMarket={setSelectedMarket} currentPrice={75} maxAmount={1000} isMobileView={true} />}
+        {/* 移动端交易面板 */}
+        {isMobile && (
+          <div className="trading-panel fixed bottom-0 left-0 right-0 z-50">
+            <TradingPanel selectedMarket={selectedMarket} setSelectedMarket={setSelectedMarket} currentPrice={75} maxAmount={1000} isMobileView={true} />
+          </div>
+        )}
       </div>
-      {/* Footer */}
+      {/* 页脚 */}
       <Footer />
     </>
   );

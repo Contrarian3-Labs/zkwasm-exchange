@@ -40,3 +40,106 @@
 .tableMarket {
   cursor: pointer;
 }
+
+/* 暗黑模式样式 */
+.dark-mode {
+  background-color: #1a1a1a;
+  color: #f0f0f0;
+}
+
+.dark-mode .card {
+  background-color: #2a2a2a;
+  color: #f0f0f0;
+}
+
+.dark-mode .table {
+  color: #f0f0f0;
+}
+
+/* 深色模式下表头样式 */
+.dark-mode .table-head {
+  background-color: #2a2a2a;
+}
+
+/* 交易面板样式 */
+.trading-panel {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 市场图表样式 */
+.market-chart-container {
+  height: 400px;
+  position: relative;
+  margin-bottom: 30px;
+  width: 100%;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 20px;
+}
+
+/* 深色模式下的图表分隔线 */
+.dark-mode .market-chart-container {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 订单簿样式 */
+.order-book-container {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-top: 10px;
+}
+
+/* 价格上涨样式 */
+.price-up {
+  color: #10b981;
+}
+
+/* 价格下跌样式 */
+.price-down {
+  color: #ef4444;
+}
+
+/* 标签页样式 */
+.nav-tabs .nav-link {
+  font-weight: 600;
+  padding: 10px 15px;
+  border-radius: 4px 4px 0 0;
+  color: #666;
+}
+
+.nav-tabs .nav-link.active {
+  color: #3b82f6;
+  border-bottom: 2px solid #3b82f6;
+}
+
+/* 评论区样式 */
+.comments-container {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* 按钮样式优化 */
+.custom-btn {
+  border-radius: 6px;
+  font-weight: 500;
+  text-transform: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.custom-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .market-chart-container {
+    height: 250px;
+  }
+  
+  .order-book-container {
+    max-height: 300px;
+  }
+}

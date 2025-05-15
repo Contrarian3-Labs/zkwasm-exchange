@@ -110,7 +110,7 @@ export default function Nav(props: NavProps) {
       onClick: handleLogoClick,
     },
     search: {
-      placeholder: "Search markets",
+      placeholder: "Search trading pairs",
       onSearch: handleSearch,
     },
     menuItems: menuItems,
