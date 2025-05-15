@@ -1,68 +1,203 @@
-import React from "react";
-import { MarketChartUI } from "polymarket-ui";
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { MDBTypography } from 'mdb-react-ui-kit';
+import { MarketChartUI, ChartData } from "polymarket-ui";
+import { useAppSelector } from '../app/hooks';
+import { selectUserState, Order } from '../data/state';
+import { selectMarketInfo } from "../data/market";
+import { ResultModal } from "../modals/ResultModal";
 
 interface MarketChartProps {
   title?: string;
-  mainValue?: number;
-  changeValue?: number;
+  selectedMarket?: number | null;
 }
 
 export const MarketChart: React.FC<MarketChartProps> = ({ 
-  title = "US recession in 2025?", 
-  mainValue = 39, 
-  changeValue = 7.8 
+  title = "US recession in 2025?",
+  selectedMarket = 1
 }) => {
-  const handleTimeRangeChange = (range: string) => {
-    console.log("时间范围改变:", range);
-  };
+  const userState = useAppSelector(selectUserState);
+  const marketInfo = useAppSelector(selectMarketInfo);
+  const [selectedTimeRange, setSelectedTimeRange] = useState("1W");
+  const [infoMessage, setInfoMessage] = useState("");
+  const [showResult, setShowResult] = useState(false);
+  const prevMarketInfoRef = useRef<typeof marketInfo>([]);
+  const [prePriceMap, setPrePriceMap] = useState<Record<string, number>>({});
+  const [lastPriceMap, setLastPriceMap] = useState<Record<string, number>>({});
 
-  const handleBookmark = () => {
-    console.log("添加书签");
-  };
+  // 获取订单数据
+  const orders = useMemo(() => userState?.state?.orders ?? [], [userState?.state?.orders]);
 
-  const handleShare = () => {
+  // 按市场ID分组订单
+  const groupedOrders = useMemo(() => {
+    return orders.reduce((acc: { [key: number]: any[] }, order) => {
+      if (!acc[order.market_id]) acc[order.market_id] = [];
+      acc[order.market_id].push(order);
+      return acc;
+    }, {});
+  }, [orders]);
+
+  const handleTimeRangeChange = useCallback((range: string) => {
+    setSelectedTimeRange(range);
+    // 在实际实现中，这里会根据时间范围获取新数据
+  }, []);
+
+  const handleBookmark = useCallback(() => {
+    setInfoMessage("Bookmark clicked");
+    setShowResult(true);
+    // 实现书签逻辑
+  }, []);
+
+  const handleShare = useCallback(() => {
     navigator.clipboard.writeText(window.location.href);
-    console.log("分享链接");
-  };
+    setInfoMessage("Share clicked");
+    setShowResult(true);
+    // 实现分享逻辑
+  }, []);
 
-  const handleCopy = () => {
-    console.log("复制内容");
-  };
+  const handleCopy = useCallback(() => {
+    setInfoMessage("Copy clicked");
+    setShowResult(true);
+    // 实现复制逻辑
+  }, []);
+
+  // 活跃市场
+  const activeMarkets = useMemo(() => 
+    marketInfo.filter(market => market.status === 1), 
+    [marketInfo]
+  );
 
   // 生成图表数据
-  const generateChartData = () => {
-    const data = [];
+  const generateChartData = useCallback((orders: Order[]): ChartData[] => {
+    const data: ChartData[] = [];
     const now = new Date();
-    for (let i = 0; i < 30; i++) {
+    let price;
+    for (let i = orders.length - 1; i >= 0; i--) {
       const date = new Date(now);
+      if(orders.length === 0) {
+        price = 0;
+      } else {
+        price = orders[i].price;
+      }
       date.setDate(date.getDate() - i);
       data.push({
         date: date.toISOString(),
-        price: Math.floor(Math.random() * 20) + 30 // 生成30-50之间的随机价格
+        price
       });
     }
-    return data.reverse();
-  };
+    return data;
+  }, []);
 
-  // 图表属性
-  const chartProps = {
-    title,
-    mainValue,
-    changeValue,
-    chartData: generateChartData(),
-    selectedTimeRange: "1W",
-    onTimeRangeChange: handleTimeRangeChange,
-    actions: {
-      onBookmark: handleBookmark,
-      onShare: handleShare,
-      onCopy: handleCopy,
+  // 图表属性数组
+  const marketChartProps = useMemo(() => {
+    // 如果没有活跃市场，返回默认图表配置
+    if (activeMarkets.length === 0 || !selectedMarket) {
+      return {
+        title,
+        mainValue: 39,
+        changeValue: 7.8,
+        chartData: generateChartData([]),
+        selectedTimeRange,
+        onTimeRangeChange: handleTimeRangeChange,
+        actions: {
+          onBookmark: handleBookmark,
+          onShare: handleShare,
+          onCopy: handleCopy,
+        }
+      };
     }
-  };
+
+    // 找到选中的市场
+    const market = activeMarkets.find(m => m.marketId === selectedMarket);
+    if (!market) {
+      return {
+        title,
+        mainValue: 39,
+        changeValue: 7.8,
+        chartData: generateChartData([]),
+        selectedTimeRange,
+        onTimeRangeChange: handleTimeRangeChange,
+        actions: {
+          onBookmark: handleBookmark,
+          onShare: handleShare,
+          onCopy: handleCopy,
+        }
+      };
+    }
+
+    // 获取该市场的订单
+    const marketId = market.marketId;
+    const marketOrders = groupedOrders[marketId] || [];
+    
+    // 计算主值和变化值
+    let mainValue;
+    let changeValue;
+    if(marketOrders.length !== 0) {
+      let lastOrder = marketOrders[marketOrders.length - 1];
+      let firstOrder = marketOrders[0];
+      mainValue = lastOrder.price;
+      changeValue = mainValue - firstOrder.price;
+    } else {
+      mainValue = Number(market.lastPrice);
+      changeValue = 0;
+    }
+
+    return {
+      title: title || `Market ${marketId}`,
+      mainValue,
+      changeValue,
+      chartData: generateChartData(marketOrders),
+      selectedTimeRange,
+      onTimeRangeChange: handleTimeRangeChange,
+      actions: {
+        onBookmark: handleBookmark,
+        onShare: handleShare,
+        onCopy: handleCopy,
+      }
+    };
+  }, [
+    activeMarkets, 
+    groupedOrders, 
+    handleBookmark, 
+    handleCopy, 
+    handleShare, 
+    handleTimeRangeChange, 
+    selectedMarket, 
+    selectedTimeRange, 
+    title, 
+    generateChartData
+  ]);
+
+  useEffect(() => {
+    const prevMarketInfo = prevMarketInfoRef.current;
+
+    const newPrePriceMap: Record<string, number> = {};
+    const newLastPriceMap: Record<string, number> = {};
+
+    marketInfo.forEach((market) => {
+      const prevMarket = prevMarketInfo.find(m => m.marketId === market.marketId);
+      const prevPrice = Number(prevMarket?.lastPrice ?? 0);
+
+      newPrePriceMap[market.marketId] = prevPrice;
+      newLastPriceMap[market.marketId] = Number(market.lastPrice);
+    });
+
+    setPrePriceMap(newPrePriceMap);
+    setLastPriceMap(newLastPriceMap);
+
+    prevMarketInfoRef.current = marketInfo;
+  }, [marketInfo]);
 
   return (
-    <div className="market-chart-container mb-4">
-      <MarketChartUI {...chartProps as any} />
-    </div>
+    <>
+      <div className="market-chart-container mb-4">
+        <MarketChartUI {...marketChartProps as any} />
+      </div>
+      <ResultModal
+        infoMessage={infoMessage}
+        show={showResult}
+        onClose={() => setShowResult(false)}
+      />
+    </>
   );
 };
 

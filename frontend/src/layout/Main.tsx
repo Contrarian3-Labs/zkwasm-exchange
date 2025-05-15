@@ -56,7 +56,6 @@ export function Main() {
   const [adminState, setAdminState] = useState<UserState | null>(null);
   const [playerState, setPlayerState] = useState<UserState | null>(null);
   const isMobile = useMediaQuery("(max-width: 1024px)");
-  const { isDarkMode, toggleDarkMode } = useThemeContext();
   const [selectedMarket, setSelectedMarket] = useState<number | null>(1); // 默认选择市场1
   const marketInfo = useAppSelector(selectMarketInfo);
 
@@ -128,7 +127,7 @@ export function Main() {
 
   return (
     <>
-      <div className={`min-h-screen ${isDarkMode ? 'dark-mode' : ''}`}>
+      <div className={`min-h-screen ${`min-h-screen bg-gray-100 dark:bg-gray-900`}`}>
         <Nav handleTabClick={handleTabClick} />
         <div className="container mx-auto px-4 py-6 pb-[120px] lg:pb-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -138,10 +137,10 @@ export function Main() {
               <MDBCard className="mb-4">
                 <MDBCardBody>
                   {/* 市场图表 */}
-                  <MarketChart />
+                  <MarketChart selectedMarket={selectedMarket} />
                   
                   {/* 订单簿 */}
-                  <OrderBook />
+                  <OrderBook selectedMarket={selectedMarket} />
                 </MDBCardBody>
               </MDBCard>
 
