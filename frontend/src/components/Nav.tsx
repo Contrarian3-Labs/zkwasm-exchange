@@ -2,13 +2,15 @@ import React, { useCallback, useState } from "react";
 import {
   MDBContainer,
   MDBNavbar,
-  MDBCol
+  MDBCol,
+  MDBBtn
 } from 'mdb-react-ui-kit';
 import { NavbarUI, useThemeContext } from "polymarket-ui";
 import {
   UserIcon,
   InformationCircleIcon,
-  Squares2X2Icon
+  Squares2X2Icon,
+  IdentificationIcon
 } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { AccountSlice } from "zkwasm-minirollup-browser";
@@ -26,6 +28,7 @@ export default function Nav(props: NavProps) {
   const { isDarkMode, toggleDarkMode } = useThemeContext();
   const [infoMessage, setInfoMessage] = useState("");
   const [showResult, setShowResult] = useState(false);
+  const [pidInfo, setPidInfo] = useState<string>("");
   const dispatch = useAppDispatch();
   const l1account = useAppSelector(AccountSlice.selectL1Account);
   const l2account = useAppSelector(AccountSlice.selectL2Account);
@@ -71,6 +74,7 @@ export default function Nav(props: NavProps) {
               console.log("L2 Login successful:", l2Action.payload);
               const l2addresshex = "0x" + l2Action.payload.pubkey;
               setUserName("ID(l2address): " + addressAbbreviation(l2addresshex, 5));
+              console.log("L2 Login successful:", l2Action.payload);
             }
           } catch (l2Err: any) {
             console.error("L2 login error:", l2Err);
@@ -86,6 +90,52 @@ export default function Nav(props: NavProps) {
       setShowResult(true);
     }
   }, [dispatch, l1account, l2account]);
+
+  const handleShowPid = useCallback(() => {
+    if (!l2account) {
+      // setInfoMessage("请先连接钱包获取L2账户");
+      setInfoMessage("Please connect wallet to get L2 account");
+      setShowResult(true);
+      return;
+    }
+
+    try {
+      // 获取公钥信息
+      const pubkey = l2account?.pubkey || "";
+      console.log("pubkey:", pubkey);
+      
+      // 输出L2Account详细信息用于调试
+      console.log("L2Account detailed information:", l2account);
+      
+      // 从十六进制字符串提取PID
+      const privKeyStr = l2account.getPrivateKey();
+      console.log("Private key string:", privKeyStr);
+      
+      if (typeof privKeyStr === 'string' && privKeyStr.length >= 16) {
+        // 将十六进制字符串分成两部分，每部分8个字符
+        const pid1Hex = privKeyStr.substring(0, 8);
+        const pid2Hex = privKeyStr.substring(8, 16);
+        
+        // 转换为十进制数值
+        const pid_1 = parseInt(pid1Hex, 16);
+        const pid_2 = parseInt(pid2Hex, 16);
+        
+        // 构建PID信息，同时显示十进制和十六进制形式
+        const hexString = pid1Hex + pid2Hex;
+        const pidDisplay = `PID: [${pid_1}, ${pid_2}]\n\nHexadecimal PID string (for deposit/transfer): \n${hexString}`;
+        
+        setPidInfo(pidDisplay);
+        setInfoMessage(pidDisplay);
+        setShowResult(true);
+      } else {
+        throw new Error("Private key format is incorrect");
+      }
+    } catch (err: any) {
+      console.error("Error getting PID:", err);
+      setInfoMessage("Failed to get PID: " + (err.message || "Unknown error"));
+      setShowResult(true);
+    }
+  }, [l2account]);
 
   const handleSearch = useCallback((query: string) => {
     console.log("Search:", query);
@@ -144,6 +194,17 @@ export default function Nav(props: NavProps) {
       <MDBContainer fluid>
         <MDBCol md="12">
           <NavbarUI {...navBarProps} />
+          {isLoggedIn && (
+            <MDBBtn 
+              color='primary' 
+              size='sm' 
+              className='ms-2'
+              onClick={handleShowPid}
+            >
+              <IdentificationIcon className="h-5 w-5 me-1" />
+              View PID
+            </MDBBtn>
+          )}
         </MDBCol>
       </MDBContainer>
     </MDBNavbar>
