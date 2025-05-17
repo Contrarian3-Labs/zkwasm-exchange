@@ -1,8 +1,16 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import {
   MDBContainer,
   MDBNavbar,
-  MDBCol
+  MDBCol,
+  MDBRow,
+  MDBBtn,
+  MDBBtnGroup,
+  MDBInput,
+  MDBDropdown,
+  MDBDropdownToggle,
+  MDBDropdownMenu,
+  MDBDropdownItem
 } from 'mdb-react-ui-kit';
 import { ResultModal } from "../modals/ResultModal";
 import { TradingPanelUI } from "polymarket-ui";
@@ -30,6 +38,29 @@ const CMD_ADD_LIMIT_ORDER = 5n;
 const CMD_ADD_MARKET_ORDER = 6n;
 const CMD_ADD_TRADE = 11n;
 const SEVER_ADMIN_KEY = "1234567";
+
+// 自定义样式
+const tradingPanelStyles = `
+  /* 隐藏Yes/No文本 */
+  .polymarket-ui-option-text[data-option="yes"] {
+    display: none;
+  }
+  
+  .polymarket-ui-option-text[data-option="no"] {
+    display: none;
+  }
+  
+  /* 添加Buy/Sell文本 */
+  .polymarket-ui-option-button[data-option="yes"]::before {
+    content: "Buy";
+    font-weight: 500;
+  }
+  
+  .polymarket-ui-option-button[data-option="no"]::before {
+    content: "Sell";
+    font-weight: 500;
+  }
+`;
 
 interface TradingPanelProps {
   currentPrice: number;
@@ -60,6 +91,17 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
   const marketInfo = useAppSelector(selectMarketInfo);
   const userState = useAppSelector(selectUserState);
   const nonce = userState?.player?.nonce || 0;
+
+  // 添加样式到DOM
+  useEffect(() => {
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = tradingPanelStyles;
+    document.head.appendChild(styleElement);
+    
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
 
   const addTrade = useCallback(async (aOrderId: bigint, bOrderId: bigint, aActualAmount: bigint, bActualAmount: bigint) => {
     if(!l2account) {
@@ -312,6 +354,11 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
     cost: bigint,
     check:(before: any, after: any, market: Market, flag: bigint, cost: bigint) => void
   ) => {
+    if (!l2account) {
+      setInfoMessage("Please connect wallet before any transactions!");
+      setShowResult(true);
+      return;
+    }
     // Query state before placing the market order
     let before = await dispatch(queryState(l2account!.getPrivateKey()));
     const action = await f();
@@ -508,10 +555,14 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
   
   const handleTabChange = useCallback((tab: "buy" | "sell") => {
     setSelectedTab(tab);
+    // 同步更新selectedOption，保持一致性
+    setSelectedOption(tab === "buy" ? "yes" : "no");
   }, []);
 
   const handleOptionChange = useCallback((option: "yes" | "no") => {
     setSelectedOption(option);
+    // 同步更新selectedTab，保持一致性
+    setSelectedTab(option === "yes" ? "buy" : "sell");
   }, []);
 
   const handleTradeTypeChange = useCallback((type: "market" | "limit") => {
@@ -519,13 +570,15 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
     setIsDropdownOpen(false);
   }, []);
 
-  const handleLimitPriceChange = useCallback((value: string) => {
+  const handleLimitPriceChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       setLimitPrice(value);
     }
   }, []);
 
-  const handleAmountChange = useCallback((value: string) => {
+  const handleAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       setAmount(value);
     }
@@ -609,18 +662,96 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
 
   return (
     <>
-    <MDBNavbar expand='lg' light bgColor='light'>
-      <MDBContainer fluid>
-        <MDBCol md="12">
-          <TradingPanelUI {...TradingPanelProps} isMobileView={isMobileView} />
-        </MDBCol>
+      <MDBContainer className="p-4 border rounded shadow-sm bg-white">
+        {/* 顶部选项卡 */}
+        <MDBRow className="mb-4">
+          <MDBCol>
+            <MDBBtnGroup>
+              <MDBBtn 
+                color={selectedTab === 'buy' ? 'primary' : 'light'} 
+                onClick={() => handleTabChange('buy')}
+              >
+                Buy
+              </MDBBtn>
+              <MDBBtn 
+                color={selectedTab === 'sell' ? 'primary' : 'light'} 
+                onClick={() => handleTabChange('sell')}
+              >
+                Sell
+              </MDBBtn>
+            </MDBBtnGroup>
+            <MDBDropdown className="float-end">
+              <MDBDropdownToggle>{tradeType === "market" ? "Market" : "Limit"}</MDBDropdownToggle>
+              <MDBDropdownMenu>
+                <MDBDropdownItem link onClick={() => handleTradeTypeChange("market")}>Market</MDBDropdownItem>
+                <MDBDropdownItem link onClick={() => handleTradeTypeChange("limit")}>Limit</MDBDropdownItem>
+              </MDBDropdownMenu>
+            </MDBDropdown>
+          </MDBCol>
+        </MDBRow>
+
+        {/* 价格输入区 */}
+        {tradeType === "limit" && (
+          <MDBRow className="mb-4">
+            <MDBCol>
+              <MDBInput 
+                label="Limit Price" 
+                value={limitPrice} 
+                onChange={handleLimitPriceChange} 
+              />
+            </MDBCol>
+          </MDBRow>
+        )}
+
+        {/* 数量输入区 */}
+        <MDBRow className="mb-4">
+          <MDBCol>
+            <label>Amount</label>
+            <MDBInput 
+              value={amount} 
+              onChange={handleAmountChange} 
+            />
+          </MDBCol>
+        </MDBRow>
+
+        {/* 快速金额按钮 */}
+        <MDBRow className="mb-4">
+          <MDBCol>
+            <MDBBtnGroup className="w-100">
+              <MDBBtn outline color="secondary" onClick={() => handleQuickAmountClick(1)}>+$1</MDBBtn>
+              <MDBBtn outline color="secondary" onClick={() => handleQuickAmountClick(20)}>+$20</MDBBtn>
+              <MDBBtn outline color="secondary" onClick={() => handleQuickAmountClick(100)}>+$100</MDBBtn>
+              <MDBBtn outline color="secondary" onClick={() => setAmount(maxAmount.toString())}>Max</MDBBtn>
+            </MDBBtnGroup>
+          </MDBCol>
+        </MDBRow>
+
+        {/* 提交按钮 */}
+        <MDBRow>
+          <MDBCol>
+            <MDBBtn 
+              color={selectedTab === 'buy' ? 'success' : 'danger'} 
+              block
+              onClick={handleSubmit}
+            >
+              {selectedTab === 'buy' ? 'Buy' : 'Sell'}
+            </MDBBtn>
+          </MDBCol>
+        </MDBRow>
+
+        {/* 条款声明 */}
+        <MDBRow className="mt-3">
+          <MDBCol className="text-center text-muted small">
+            By trading, you agree to the Terms of Use
+          </MDBCol>
+        </MDBRow>
       </MDBContainer>
-    </MDBNavbar>
-    <ResultModal
-      infoMessage={infoMessage}
-      show={showResult}
-      onClose={() => setShowResult(false)}
-    />
+
+      <ResultModal
+        infoMessage={infoMessage}
+        show={showResult}
+        onClose={() => setShowResult(false)}
+      />
     </>
   );
 }

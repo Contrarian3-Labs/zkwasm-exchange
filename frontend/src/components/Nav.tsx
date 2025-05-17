@@ -32,6 +32,7 @@ export default function Nav(props: NavProps) {
   const dispatch = useAppDispatch();
   const l1account = useAppSelector(AccountSlice.selectL1Account);
   const l2account = useAppSelector(AccountSlice.selectL2Account);
+  console.log("pidInfo:", pidInfo);
 
   const connectWallet = useCallback(async () => {
     try {
