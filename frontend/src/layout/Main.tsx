@@ -22,6 +22,7 @@ import { PlayerInfo } from "../components/PlayerInfo";
 import TokenInfo from "../components/TokenInfo";
 import { AdminInfo } from "../components/AdminInfo";
 import { TradeInfo } from "../components/TradeInfo";
+import MarketList from "../components/MarketList";
 import {
   MDBCard,
   MDBCardBody,
@@ -29,7 +30,7 @@ import {
   MDBCol,
   MDBTypography,
   MDBTabsContent,
-  MDBTabsPane,
+  MDBTabsPane
 } from 'mdb-react-ui-kit';
 import { queryStateI } from "../request";
 import { UserState } from "../data/state";
@@ -133,16 +134,39 @@ export function Main() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 左侧市场图表和信息 */}
             <div className="lg:col-span-2 space-y-6">
-              {/* 市场图表和订单簿 */}
-              <MDBCard className="mb-4">
-                <MDBCardBody>
-                  {/* 市场图表 */}
-                  <MarketChart selectedMarket={selectedMarket} />
+              {/* 市场列表 */}
+              <MarketList 
+                selectedMarket={selectedMarket} 
+                setSelectedMarket={setSelectedMarket} 
+              />
+              
+              {/* 市场图表和订单簿 - 仅在选择市场后显示 */}
+              {selectedMarket ? (
+                <>
+                  <MDBCard className="mb-4">
+                    <MDBCardBody>
+                      {/* 市场图表 */}
+                      <MarketChart selectedMarket={selectedMarket} />
+                      
+                      {/* 订单簿 */}
+                      <OrderBook selectedMarket={selectedMarket} />
+                    </MDBCardBody>
+                  </MDBCard>
                   
-                  {/* 订单簿 */}
-                  <OrderBook selectedMarket={selectedMarket} />
-                </MDBCardBody>
-              </MDBCard>
+                  {/* 评论区 - 仅在选择市场后显示 */}
+                  <MDBCard className="comments-container">
+                    <MDBCardBody>
+                      <Comments />
+                    </MDBCardBody>
+                  </MDBCard>
+                </>
+              ) : (
+                <MDBCard>
+                  <MDBCardBody className="text-center">
+                    <p className="mb-0">Please select a market to view details.</p>
+                  </MDBCardBody>
+                </MDBCard>
+              )}
 
               {/* Tab内容 */}
               <MDBTabsContent style={{ maxHeight: "400px", overflowY: "auto" }}>
@@ -176,17 +200,10 @@ export function Main() {
                   </MDBCard>
                 </MDBCol>
               </MDBRow>
-              
-              {/* 评论区 */}
-              <MDBCard className="comments-container">
-                <MDBCardBody>
-                  <Comments />
-                </MDBCardBody>
-              </MDBCard>
             </div>
             
-            {/* 右侧交易面板 - 仅在桌面显示 */}
-            {!isMobile && (
+            {/* 右侧交易面板 - 仅在桌面和选择市场后显示 */}
+            {!isMobile && selectedMarket && (
               <div className="lg:col-span-1">
                 <div className="trading-panel">
                   <TradingPanel selectedMarket={selectedMarket} setSelectedMarket={setSelectedMarket} currentPrice={75} maxAmount={1000} />
@@ -195,8 +212,8 @@ export function Main() {
             )}
           </div>
         </div>
-        {/* 移动端交易面板 */}
-        {isMobile && (
+        {/* 移动端交易面板 - 仅在选择市场后显示 */}
+        {isMobile && selectedMarket && (
           <div className="trading-panel fixed bottom-0 left-0 right-0 z-50">
             <TradingPanel selectedMarket={selectedMarket} setSelectedMarket={setSelectedMarket} currentPrice={75} maxAmount={1000} isMobileView={true} />
           </div>
