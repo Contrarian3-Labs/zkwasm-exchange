@@ -1,5 +1,6 @@
 /* eslint-disable */
 import React, { useEffect, useState, useCallback } from "react";
+import { useNavigate } from 'react-router-dom';
 import 'mdb-react-ui-kit/dist/css/mdb.min.css';
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./style.css";
@@ -34,21 +35,14 @@ import {
 } from 'mdb-react-ui-kit';
 import { queryStateI } from "../request";
 import { UserState } from "../data/state";
-import {
-  useMediaQuery,
-  useThemeContext,
-} from "polymarket-ui";
-import TradingPanel from "../components/TradingPanel";
-import { Comments } from "../components/Comments";
 import { selectMarketInfo } from "../data/market";
-import MarketChart from "../components/MarketChart";
-import OrderBook from "../components/OrderBook";
 
 const CMD_REGISTER_PLAYER = 4n;
 // hardcode admin for test
 export const server_admin_key = "1234567";
 
 export function Main() {
+  const navigate = useNavigate();
   const connectState = useAppSelector(selectConnectState);
   const l2account = useAppSelector(AccountSlice.selectL2Account);
   const dispatch = useAppDispatch();
@@ -56,12 +50,12 @@ export function Main() {
   const [activeTab, setActiveTab] = useState("1");
   const [adminState, setAdminState] = useState<UserState | null>(null);
   const [playerState, setPlayerState] = useState<UserState | null>(null);
-  const isMobile = useMediaQuery("(max-width: 1024px)");
   const [selectedMarket, setSelectedMarket] = useState<number | null>(null); // 初始不选择任何市场
   const marketInfo = useAppSelector(selectMarketInfo);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredMarkets, setFilteredMarkets] = useState<any[]>([]);
   const [skipNextUpdate, setSkipNextUpdate] = useState(false);
+  const [showMarketList, setShowMarketList] = useState(true); // 控制是否显示市场列表
 
   // 过滤市场的函数
   const filterMarkets = useCallback((query: string, markets: any[]) => {
@@ -176,9 +170,9 @@ export function Main() {
     }
   }, [connectState]);
 
-  const handleTabClick = (value: string) => {    
-    if (value === activeTab) return;    
-    setActiveTab(value);  
+  const handleTabClick = (value: string) => {
+    if (value === activeTab) return;
+    setActiveTab(value);
   };
 
   // 当搜索查询改变时
@@ -211,6 +205,21 @@ export function Main() {
     }
   }, [marketInfo, searchQuery, filterMarkets]);
 
+  // 处理选择市场的逻辑
+  const handleSelectMarket = useCallback((marketId: number | null | React.SetStateAction<number | null>) => {
+    // 处理函数式更新
+    const newMarketId = typeof marketId === 'function' ? marketId(selectedMarket) : marketId;
+    setSelectedMarket(newMarketId);
+    
+    // 当选择市场时，导航到市场详情页
+    if (newMarketId !== null) {
+      navigate(`/market/${newMarketId}`);
+    } else {
+      // 如果取消选择，隐藏市场列表
+      setShowMarketList(true);
+    }
+  }, [selectedMarket, navigate]);
+
   return (
     <>
       <div className={`min-h-screen ${`min-h-screen bg-gray-100 dark:bg-gray-900`}`}>
@@ -223,40 +232,22 @@ export function Main() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 左侧市场图表和信息 */}
             <div className="lg:col-span-2 space-y-6">
-              {/* 市场列表 */}
-              <MarketList 
-                selectedMarket={selectedMarket} 
-                setSelectedMarket={setSelectedMarket}
-                filteredMarkets={filteredMarkets}
-              />
-              
-              {/* 市场图表和订单簿 - 仅在选择市场后显示 */}
-              {selectedMarket ? (
-                <>
-                  <MDBCard className="mb-4">
-                    <MDBCardBody>
-                      {/* 市场图表 */}
-                      <MarketChart selectedMarket={selectedMarket} />
-                      
-                      {/* 订单簿 */}
-                      <OrderBook selectedMarket={selectedMarket} />
-                    </MDBCardBody>
-                  </MDBCard>
-                  
-                  {/* 评论区 - 仅在选择市场后显示 */}
-                  <MDBCard className="comments-container">
-                    <MDBCardBody>
-                      <Comments />
-                    </MDBCardBody>
-                  </MDBCard>
-                </>
+              {/* 市场列表 - 仅在未选择市场或主动显示列表时显示 */}
+              {showMarketList ? (
+                <MarketList 
+                  selectedMarket={selectedMarket} 
+                  setSelectedMarket={handleSelectMarket}
+                  filteredMarkets={filteredMarkets}
+                />
               ) : (
                 <MDBCard>
                   <MDBCardBody className="text-center">
-                    <p className="mb-0">Please select a market to view details.</p>
+                    <p className="mb-0">Loading market details...</p>
                   </MDBCardBody>
                 </MDBCard>
               )}
+              
+
 
               {/* Tab内容 */}
               <MDBTabsContent style={{ maxHeight: "400px", overflowY: "auto" }}>
@@ -270,7 +261,7 @@ export function Main() {
                   <TokenInfo />
                 </MDBTabsPane>
                 <MDBTabsPane open={activeTab === "4"}>
-                  <MarketPage selectedMarket={selectedMarket} setSelectedMarket={setSelectedMarket} />
+                  <MarketPage selectedMarket={selectedMarket} setSelectedMarket={handleSelectMarket} />
                 </MDBTabsPane>
                 <MDBTabsPane open={activeTab === "5"}>
                   <TradeInfo playerState={playerState} handleTabClick={handleTabClick} />
@@ -292,22 +283,10 @@ export function Main() {
               </MDBRow>
             </div>
             
-            {/* 右侧交易面板 - 仅在桌面和选择市场后显示 */}
-            {!isMobile && selectedMarket && (
-              <div className="lg:col-span-1">
-                <div className="trading-panel">
-                  <TradingPanel selectedMarket={selectedMarket} setSelectedMarket={setSelectedMarket} currentPrice={75} maxAmount={1000} />
-                </div>
-              </div>
-            )}
+
           </div>
         </div>
-        {/* 移动端交易面板 - 仅在选择市场后显示 */}
-        {isMobile && selectedMarket && (
-          <div className="trading-panel fixed bottom-0 left-0 right-0 z-50">
-            <TradingPanel selectedMarket={selectedMarket} setSelectedMarket={setSelectedMarket} currentPrice={75} maxAmount={1000} isMobileView={true} />
-          </div>
-        )}
+
       </div>
       {/* 页脚 */}
       <Footer />

@@ -36,7 +36,8 @@ const MarketList: React.FC<MarketListProps> = ({
 
   // Handle market click
   const handleMarketClick = (marketId: number) => {
-    setSelectedMarket(marketId === selectedMarket ? null : marketId);
+    // 直接调用setSelectedMarket，导航逻辑已在Main.tsx中处理
+    setSelectedMarket(marketId);
   };
 
   // Get status badge
@@ -105,7 +106,7 @@ const MarketList: React.FC<MarketListProps> = ({
                     className="btn btn-sm btn-primary"
                     onClick={() => handleMarketClick(market.marketId)}
                   >
-                    {selectedMarket === market.marketId ? 'Close' : 'View'}
+                    View
                   </button>
                 </td>
               </tr>
@@ -129,7 +130,7 @@ const MarketList: React.FC<MarketListProps> = ({
                     disabled={market.status === 0}
                     onClick={() => handleMarketClick(market.marketId)}
                   >
-                    {selectedMarket === market.marketId ? 'Close' : 'View'}
+                    Close
                   </button>
                 </td>
               </tr>
