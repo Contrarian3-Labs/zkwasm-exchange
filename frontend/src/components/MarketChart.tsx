@@ -11,7 +11,6 @@ interface MarketChartProps {
 }
 
 export const MarketChart: React.FC<MarketChartProps> = ({ 
-  title = "US recession in 2025?",
   selectedMarket = 1
 }) => {
   const userState = useAppSelector(selectUserState);
@@ -22,6 +21,13 @@ export const MarketChart: React.FC<MarketChartProps> = ({
   const prevMarketInfoRef = useRef<typeof marketInfo>([]);
   const [prePriceMap, setPrePriceMap] = useState<Record<string, number>>({});
   const [lastPriceMap, setLastPriceMap] = useState<Record<string, number>>({});
+
+  // 获取市场标题
+  const title = useMemo(() => {
+    if (!selectedMarket) return "Market title";
+    const market = marketInfo.find(m => m.marketId === selectedMarket);
+    return market ? `Market ${market.marketId}` : "Market title";
+  }, [marketInfo, selectedMarket]);
 
   // 获取订单数据
   const orders = useMemo(() => userState?.state?.orders ?? [], [userState?.state?.orders]);
@@ -151,7 +157,7 @@ export const MarketChart: React.FC<MarketChartProps> = ({
                           lastPriceMap[marketId] < prePriceMap[marketId] ? "down" : "neutral";
 
     return {
-      title: title || `Market ${marketId}`,
+      title,
       mainValue,
       changeValue,
       chartData: generateChartData(marketOrders),

@@ -12,7 +12,6 @@ interface OrderBookProps {
 }
 
 export const OrderBook: React.FC<OrderBookProps> = ({ 
-  title = "Order Book",
   selectedMarket = 1
 }) => {
   const userState = useAppSelector(selectUserState);
@@ -22,6 +21,13 @@ export const OrderBook: React.FC<OrderBookProps> = ({
   const [prePriceMap, setPrePriceMap] = useState<Record<string, number>>({});
   const [lastPriceMap, setLastPriceMap] = useState<Record<string, number>>({});
   const prevMarketInfoRef = useRef<typeof marketInfo>([]);
+
+  // 获取市场标题
+  const title = useMemo(() => {
+    if (!selectedMarket) return "Order Book";
+    const market = marketInfo.find(m => m.marketId === selectedMarket);
+    return market ? `Market ${market.marketId} Order Book` : "Order Book";
+  }, [marketInfo, selectedMarket]);
 
   // 获取订单数据
   const orders = useMemo(() => userState?.state?.orders ?? [], [userState?.state?.orders]);
@@ -146,7 +152,7 @@ export const OrderBook: React.FC<OrderBookProps> = ({
       lastPriceMap[marketId] < prePriceMap[marketId] ? "down" : "neutral";
 
     return {
-      title: title || `Market ${marketId}`,
+      title,
       asks,
       bids,
       summary: {
