@@ -1,5 +1,5 @@
 /* eslint-disable */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import 'mdb-react-ui-kit/dist/css/mdb.min.css';
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./style.css";
@@ -57,12 +57,56 @@ export function Main() {
   const [adminState, setAdminState] = useState<UserState | null>(null);
   const [playerState, setPlayerState] = useState<UserState | null>(null);
   const isMobile = useMediaQuery("(max-width: 1024px)");
-  const [selectedMarket, setSelectedMarket] = useState<number | null>(1); // 默认选择市场1
+  const [selectedMarket, setSelectedMarket] = useState<number | null>(null); // 初始不选择任何市场
   const marketInfo = useAppSelector(selectMarketInfo);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredMarkets, setFilteredMarkets] = useState<any[]>([]);
+  const [skipNextUpdate, setSkipNextUpdate] = useState(false);
+
+  // 过滤市场的函数
+  const filterMarkets = useCallback((query: string, markets: any[]) => {
+    if (!query || query.trim() === "") {
+      return markets;
+    }
+
+    const lowerQuery = query.toLowerCase();
+    
+    return markets.filter(market => {
+      // 搜索市场ID
+      if (market.marketId.toString().includes(lowerQuery)) {
+        return true;
+      }
+      
+      // 搜索交易对
+      const tradingPair = `Token ${market.tokenA} / Token ${market.tokenB}`.toLowerCase();
+      if (tradingPair.includes(lowerQuery)) {
+        return true;
+      }
+      
+      // 搜索价格
+      if (market.lastPrice.toString().includes(lowerQuery)) {
+        return true;
+      }
+      
+      // 搜索状态
+      const status = market.status === 1 ? "active" : "closed";
+      if (status.includes(lowerQuery)) {
+        return true;
+      }
+      
+      return false;
+    });
+  }, []);
 
   async function updateState() {
-    dispatch(queryMarket());
-    dispatch(queryToken());
+    // 如果需要跳过更新（例如刚执行完搜索），则重置标志并返回
+    if (skipNextUpdate) {
+      setSkipNextUpdate(false);
+      return;
+    }
+
+    await dispatch(queryMarket());
+    await dispatch(queryToken());
 
     // get admin to show admin balance
     const state = await queryStateI(server_admin_key);
@@ -74,6 +118,14 @@ export function Main() {
     } else if (connectState == ConnectState.Init) {
       dispatch(queryInitialState("1"));
     }
+
+    // 在更新后重新应用搜索过滤
+    if (searchQuery) {
+      const markets = marketInfo;
+      const filtered = filterMarkets(searchQuery, markets);
+      setFilteredMarkets(filtered);
+    }
+
     setInc(inc + 1);
   }
 
@@ -99,9 +151,12 @@ export function Main() {
   }, [l2account]);
 
   useEffect(() => {
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       updateState();
     }, 3000);
+    
+    // 清理计时器
+    return () => clearTimeout(timer);
   }, [inc]);
 
 
@@ -126,10 +181,44 @@ export function Main() {
     setActiveTab(value);  
   };
 
+  // 当搜索查询改变时
+  const handleSearchQueryChange = useCallback((query: string) => {
+    setSearchQuery(query);
+    
+    // 如果查询为空，重置为显示所有市场
+    if (!query || query.trim() === "") {
+      setFilteredMarkets(marketInfo);
+      return;
+    }
+    
+    // 搜索时设置跳过下一次自动更新，防止搜索结果被覆盖
+    setSkipNextUpdate(true);
+    
+    // 立即过滤市场数据
+    const filtered = filterMarkets(query, marketInfo);
+    setFilteredMarkets(filtered);
+  }, [marketInfo, filterMarkets]);
+
+  // 初始化时设置过滤后的市场
+  useEffect(() => {
+    // 只有当没有搜索查询时才更新filteredMarkets
+    if (!searchQuery) {
+      setFilteredMarkets(marketInfo);
+    } else {
+      // 如果有搜索查询，重新应用过滤
+      const filtered = filterMarkets(searchQuery, marketInfo);
+      setFilteredMarkets(filtered);
+    }
+  }, [marketInfo, searchQuery, filterMarkets]);
+
   return (
     <>
       <div className={`min-h-screen ${`min-h-screen bg-gray-100 dark:bg-gray-900`}`}>
-        <Nav handleTabClick={handleTabClick} />
+        <Nav 
+          handleTabClick={handleTabClick} 
+          searchQuery={searchQuery}
+          setSearchQuery={handleSearchQueryChange}
+        />
         <div className="container mx-auto px-4 py-6 pb-[120px] lg:pb-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 左侧市场图表和信息 */}
@@ -137,7 +226,8 @@ export function Main() {
               {/* 市场列表 */}
               <MarketList 
                 selectedMarket={selectedMarket} 
-                setSelectedMarket={setSelectedMarket} 
+                setSelectedMarket={setSelectedMarket}
+                filteredMarkets={filteredMarkets}
               />
               
               {/* 市场图表和订单簿 - 仅在选择市场后显示 */}

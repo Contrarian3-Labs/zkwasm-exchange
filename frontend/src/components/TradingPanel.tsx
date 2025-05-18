@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useEffect } from "react";
 import {
   MDBContainer,
-  MDBNavbar,
+  // MDBNavbar,
   MDBCol,
   MDBRow,
   MDBBtn,
@@ -13,7 +13,7 @@ import {
   MDBDropdownItem
 } from 'mdb-react-ui-kit';
 import { ResultModal } from "../modals/ResultModal";
-import { TradingPanelUI } from "polymarket-ui";
+// import { TradingPanelUI } from "polymarket-ui";
 import { useAppSelector, useAppDispatch } from "../app/hooks";
 import { AccountSlice } from "zkwasm-minirollup-browser";
 import { sendTransaction, queryState } from "../request";
@@ -84,13 +84,16 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
   const [limitPrice, setLimitPrice] = useState<string>(currentPrice.toString());
   const [amount, setAmount] = useState<string>("0");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  // const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [infoMessage, setInfoMessage] = useState("");
   const [showResult, setShowResult] = useState(false);
   const l2account = useAppSelector(AccountSlice.selectL2Account);
   const marketInfo = useAppSelector(selectMarketInfo);
   const userState = useAppSelector(selectUserState);
   const nonce = userState?.player?.nonce || 0;
+
+  console.log("selectedOption:", selectedOption);
+  console.log("isDropdownOpen:", isDropdownOpen);
 
   // 添加样式到DOM
   useEffect(() => {
@@ -559,11 +562,11 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
     setSelectedOption(tab === "buy" ? "yes" : "no");
   }, []);
 
-  const handleOptionChange = useCallback((option: "yes" | "no") => {
-    setSelectedOption(option);
-    // 同步更新selectedTab，保持一致性
-    setSelectedTab(option === "yes" ? "buy" : "sell");
-  }, []);
+  // const handleOptionChange = useCallback((option: "yes" | "no") => {
+  //   setSelectedOption(option);
+  //   // 同步更新selectedTab，保持一致性
+  //   setSelectedTab(option === "yes" ? "buy" : "sell");
+  // }, []);
 
   const handleTradeTypeChange = useCallback((type: "market" | "limit") => {
     setTradeType(type);
@@ -639,26 +642,26 @@ const TradingPanel: React.FC<TradingPanelProps> = ({
     }
   }, [amount, selectedTab, currentPrice, addLimitOrder, addMarketOrder, limitPrice, selectedMarket, tradeType]);
 
-  const TradingPanelProps = {
-    currentPrice: 75,
-    selectedTab,
-    selectedOption,
-    tradeType,
-    limitPrice,
-    amount,
-    maxAmount,
-    isDropdownOpen,
-    isMoreMenuOpen,
-    onTabChange: handleTabChange,
-    onOptionChange: handleOptionChange,
-    onTradeTypeChange: handleTradeTypeChange,
-    onLimitPriceChange: handleLimitPriceChange,
-    setIsDropdownOpen,
-    onAmountChange: handleAmountChange,
-    onQuickAmountClick: handleQuickAmountClick,
-    onSubmit: handleSubmit,
-    setIsMoreMenuOpen,
-  }
+  // const TradingPanelProps = {
+  //   currentPrice: 75,
+  //   selectedTab,
+  //   selectedOption,
+  //   tradeType,
+  //   limitPrice,
+  //   amount,
+  //   maxAmount,
+  //   isDropdownOpen,
+  //   isMoreMenuOpen,
+  //   onTabChange: handleTabChange,
+  //   onOptionChange: handleOptionChange,
+  //   onTradeTypeChange: handleTradeTypeChange,
+  //   onLimitPriceChange: handleLimitPriceChange,
+  //   setIsDropdownOpen,
+  //   onAmountChange: handleAmountChange,
+  //   onQuickAmountClick: handleQuickAmountClick,
+  //   onSubmit: handleSubmit,
+  //   setIsMoreMenuOpen,
+  // }
 
   return (
     <>

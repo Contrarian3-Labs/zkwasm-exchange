@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import {
   MDBContainer,
   MDBNavbar,
@@ -20,6 +20,8 @@ import { ResultModal } from "../modals/ResultModal";
 
 interface NavProps {
   handleTabClick: (value: string) => void;
+  searchQuery?: string;
+  setSearchQuery?: (query: string) => void;
 }
 
 export default function Nav(props: NavProps) {
@@ -32,7 +34,16 @@ export default function Nav(props: NavProps) {
   const dispatch = useAppDispatch();
   const l1account = useAppSelector(AccountSlice.selectL1Account);
   const l2account = useAppSelector(AccountSlice.selectL2Account);
+  // 用于跟踪搜索输入变化的内部状态
+  const [localSearchQuery, setLocalSearchQuery] = useState("");
   console.log("pidInfo:", pidInfo);
+
+  // 当外部searchQuery发生变化时，更新本地状态
+  useEffect(() => {
+    if (props.searchQuery !== undefined) {
+      setLocalSearchQuery(props.searchQuery);
+    }
+  }, [props.searchQuery]);
 
   const connectWallet = useCallback(async () => {
     try {
@@ -138,10 +149,24 @@ export default function Nav(props: NavProps) {
     }
   }, [l2account]);
 
+  // 处理搜索输入变化，直接通知父组件
+  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setLocalSearchQuery(value);
+    
+    // 如果清空了搜索框，立即通知父组件显示所有内容
+    if (value === "" && props.setSearchQuery) {
+      props.setSearchQuery("");
+    }
+  }, [props]);
+
+  // 处理搜索提交
   const handleSearch = useCallback((query: string) => {
-    console.log("Search:", query);
-    // Implement search logic
-  }, []);
+    // 将搜索控制权转移到Main组件
+    if (props.setSearchQuery) {
+      props.setSearchQuery(query);
+    }
+  }, [props]);
 
   const handleProfileClick = useCallback(() => {
     if (!isLoggedIn) {
@@ -151,8 +176,12 @@ export default function Nav(props: NavProps) {
 
   const handleLogoClick = useCallback(() => {
     console.log("Logo clicked");
-    // Implement navigation to home
-  }, []);
+    // 重置搜索并立即通知父组件
+    setLocalSearchQuery("");
+    if (props.setSearchQuery) {
+      props.setSearchQuery("");
+    }
+  }, [props]);
 
   const menuItems = [
     { label: "Admin Balance", onClick: () => props.handleTabClick("1"), icon: UserIcon },
@@ -168,8 +197,10 @@ export default function Nav(props: NavProps) {
       onClick: handleLogoClick,
     },
     search: {
-      placeholder: "Search trading pairs",
+      placeholder: "Search markets by ID, token, price or status",
       onSearch: handleSearch,
+      onChange: handleInputChange, // 添加输入变化处理
+      value: localSearchQuery, // 使用本地状态
     },
     menuItems: menuItems,
     auth: {
