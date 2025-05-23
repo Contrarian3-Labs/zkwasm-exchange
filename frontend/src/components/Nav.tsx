@@ -21,6 +21,8 @@ import { AccountSlice } from "zkwasm-minirollup-browser";
 import { extractErrorMessage } from "../utils/transaction";
 import { addressAbbreviation } from "../utils/address";
 import { ResultModal } from "../modals/ResultModal";
+import { bnToHexLe } from "delphinus-curves/src/altjubjub";
+import { LeHexBN } from 'zkwasm-minirollup-rpc';
 
 interface NavProps {
   handleTabClick: (value: string) => void;
@@ -229,32 +231,24 @@ export default function Nav(props: NavProps) {
       // 输出L2Account详细信息用于调试
       console.log("L2Account detailed information:", l2account);
       
-      // 从十六进制字符串提取PID
-      const privKeyStr = l2account.getPrivateKey();
-      console.log("Private key string:", privKeyStr);
+      // 使用bnToHexLe函数从公钥计算PID
+      const pid = bnToHexLe(pubkey);
+
+      let pid2 = new LeHexBN(pid).toU64Array();
       
-      if (typeof privKeyStr === 'string' && privKeyStr.length >= 16) {
-        // 将十六进制字符串分成两部分，每部分8个字符
-        const pid1Hex = privKeyStr.substring(0, 8);
-        const pid2Hex = privKeyStr.substring(8, 16);
-        
-        // 转换为十进制数值
-        const pid_1 = parseInt(pid1Hex, 16);
-        const pid_2 = parseInt(pid2Hex, 16);
-        
+      if (pid && pid.length >= 16) {
         // 构建PID信息，同时显示十进制和十六进制形式
-        const hexString = pid1Hex + pid2Hex;
-        const pidDisplay = `PID: [${pid_1}, ${pid_2}]\n\nHexadecimal PID string (for deposit/transfer): \n${hexString}`;
+        const pidDisplay = `PID string (for deposit/transfer): \n${pid}\n\nPID2: [${pid2[1]}, ${pid2[2]}]`;
         
         setPidInfo(pidDisplay);
         setInfoMessage(pidDisplay);
         setShowResult(true);
       } else {
-        throw new Error("Private key format is incorrect");
+        throw new Error("生成的PID格式不正确");
       }
     } catch (err: any) {
       console.error("Error getting PID:", err);
-      setInfoMessage("Failed to get PID: " + (err.message || "Unknown error"));
+      setInfoMessage("获取PID失败: " + (err.message || "未知错误"));
       setShowResult(true);
     }
   }, [l2account]);
