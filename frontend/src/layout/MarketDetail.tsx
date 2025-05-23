@@ -170,18 +170,49 @@ function MarketDetailContent() {
 
   // 获取市场数据
   async function updateState() {
-    await dispatch(queryMarket());
-    await dispatch(queryToken());
+    try {
+      console.log("开始更新市场详情数据...");
+      
+      try {
+        await dispatch(queryMarket());
+      } catch (error) {
+        console.error("更新市场数据失败:", error);
+      }
+      
+      try {
+        await dispatch(queryToken());
+      } catch (error) {
+        console.error("更新代币数据失败:", error);
+      }
 
-    // get admin to show admin balance
-    const state = await queryStateI(server_admin_key);
-    console.log("(Data-QueryAdminState)", state);
-    setAdminState(state);
-    if (connectState == ConnectState.Idle) {
-      const action = await dispatch(queryState(l2account!.getPrivateKey()));
-      setPlayerState(action.payload);
-    } else if (connectState == ConnectState.Init) {
-      dispatch(queryInitialState("1"));
+      // get admin to show admin balance
+      try {
+        console.log("获取管理员状态...");
+        const state = await queryStateI(server_admin_key);
+        console.log("(Data-QueryAdminState)", state);
+        setAdminState(state);
+      } catch (error) {
+        console.error("获取管理员状态失败:", error);
+      }
+      
+      if (connectState == ConnectState.Idle) {
+        try {
+          const action = await dispatch(queryState(l2account!.getPrivateKey()));
+          setPlayerState(action.payload);
+        } catch (error) {
+          console.error("获取玩家状态失败:", error);
+        }
+      } else if (connectState == ConnectState.Init) {
+        try {
+          await dispatch(queryInitialState("1"));
+        } catch (error) {
+          console.error("获取初始状态失败:", error);
+        }
+      }
+      
+      console.log("市场详情数据更新完成");
+    } catch (error) {
+      console.error("市场详情更新错误:", error);
     }
 
     setInc(inc + 1);
