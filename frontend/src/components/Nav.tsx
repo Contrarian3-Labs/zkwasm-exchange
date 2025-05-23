@@ -42,6 +42,7 @@ export default function Nav(props: NavProps) {
   const l2account = useAppSelector(AccountSlice.selectL2Account);
   // 用于跟踪搜索输入变化的内部状态
   const [localSearchQuery, setLocalSearchQuery] = useState("");
+  console.log("pidInfo:", pidInfo);
 
   // 定义一个函数用于自动恢复登录状态，与connectWallet分开
   const attemptAutoLogin = useCallback(async () => {
@@ -123,7 +124,7 @@ export default function Nav(props: NavProps) {
     
     // 尝试自动登录
     attemptAutoLogin();
-  }, [attemptAutoLogin]);
+  }, [attemptAutoLogin, l1account, l2account]);
 
   // 当外部searchQuery发生变化时，更新本地状态
   useEffect(() => {

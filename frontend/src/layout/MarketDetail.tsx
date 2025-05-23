@@ -276,11 +276,11 @@ function MarketDetailContent() {
             </MDBCard>
             
             {/* 评论区 */}
-            <MDBCard className="comments-container">
+            {/* <MDBCard className="comments-container">
               <MDBCardBody>
                 <Comments />
               </MDBCardBody>
-            </MDBCard>
+            </MDBCard> */}
           </div>
           
           {/* 右侧交易面板 - 仅在桌面显示 */}
